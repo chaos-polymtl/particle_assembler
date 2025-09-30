@@ -127,19 +127,95 @@ $$0 \leq z \leq H$$
 
 ## Installation
 
+### Requirements
+
+- C++ compiler with C++17 support
+- CMake 3.10 or higher
+- Python 3.x with NumPy and PyVista (for visualization)
+
+### Build Instructions
+
 ```bash
 # Clone the repository
 git clone https://github.com/chaos-polymtl/particle_assembler.git
 cd particle_assembler
 
-# Build instructions will be added when source code is available
+# Create build directory
+mkdir build
+cd build
+
+# Configure and build
+cmake ..
+make
+
+# The executable will be created as ParticleAssembler
 ```
 
 ## Usage
 
+### Running the Particle Assembler
+
+The particle assembler generates a packed particle assembly in a cylindrical shell geometry:
+
 ```bash
-# Usage instructions will be added when source code is available
+# Run the assembler
+./ParticleAssembler
 ```
+
+This will:
+1. Initialize N particles randomly within the cylindrical shell
+2. Gradually grow particle radii from an initial low packing fraction to the target packing fraction
+3. Use FIRE algorithm to relax overlaps at each growth step
+4. Output the final particle configuration to `output.txt`
+
+### Configuration
+
+Key parameters are defined in `source/particle_assembler.cc`:
+
+- `N`: Number of particles (default: 70486)
+- `phi_target`: Target packing fraction (default: 0.30)
+- `r_in`: Inner radius of cylindrical shell (default: 0.0064 m)
+- `thickness`: Shell thickness (default: 0.0238 - r_in m)
+- `height`: Cylinder height (default: 0.25 m)
+- `k_pair`: Particle-particle interaction stiffness (default: 1e3)
+- `k_wall`: Particle-wall interaction stiffness (default: 1e3)
+- `grow_rate`: Particle radius growth rate per cycle (default: 1.02)
+- `fire_max_steps`: Maximum FIRE iterations per cycle (default: 100000)
+- `fire_dt`: FIRE timestep (default: 1e-5)
+- `FIRE_FTOL`: Force convergence tolerance (default: 1e-6)
+
+### Output Format
+
+The software outputs a file `output.txt` with the following format:
+```
+# x y z radius
+x1 y1 z1 r
+x2 y2 z2 r
+...
+```
+
+### Visualization
+
+Convert the output to VTP format for visualization in ParaView:
+
+```bash
+cd python
+python convert_output_to_vtp.py ../build/output.txt
+```
+
+The script supports the following options:
+- `input_file`: (required) Input file containing particle positions and radii
+- `--output-vtp`: Output VTP file name (default: `particles.vtp`)
+- `--output-lethe`: Output Lethe insertion file name (default: `insertion_file.dat`)
+
+Example with custom output names:
+```bash
+python convert_output_to_vtp.py output.txt --output-vtp my_particles.vtp --output-lethe my_insertion.dat
+```
+
+This will generate:
+- `particles.vtp` (or custom name): VTK PolyData file for ParaView visualization
+- `insertion_file.dat` (or custom name): Lethe-compatible particle insertion file
 
 ## References
 

@@ -28,4 +28,3 @@ lethe_data[:, 0:3] = positions
 lethe_data[:, -1] = radius * 2
 header = "p_x; p_y; p_z; v_x; v_y; v_z; w_x; w_y; w_z; diameters;   T;"
 np.savetxt(args.output_lethe, lethe_data, header=header)
-

@@ -174,7 +174,7 @@ NOTE: The syntax of the particle assembler is currently unstable
 
 Key parameters are defined in json files (ex: `examples/tetlow_phi_10p.json`:
 
-- `N`: Number of particles (no default)
+- `n`: Number of particles (no default)
 - `phi_target`: Target packing fraction (no default)
 - `r_in`: Inner radius of cylindrical shell (no default)
 - `thickness`: Shell thickness, distance between outer and inner radius (no default)

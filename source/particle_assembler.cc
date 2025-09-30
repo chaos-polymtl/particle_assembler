@@ -11,7 +11,7 @@
 using json = nlohmann::json;
 
 struct SimulationParameters {
-  int N;
+  int n;
   double phi_target;
   double r_in;
   double thickness;
@@ -46,7 +46,7 @@ SimulationParameters load_parameters(const std::string &filename) {
   SimulationParameters p;
 
   try {
-    p.N = config.at("N").get<int>();
+    p.n = config.at("n").get<int>();
     p.phi_target = config.at("phi_target").get<double>();
     p.r_in = config.at("r_in").get<double>();
     p.thickness = config.at("thickness").get<double>();
@@ -425,9 +425,9 @@ int main(int argc, char *argv[]) {
   // Parse JSON and put it into simulation parameters;
   SimulationParameters params = load_parameters(argv[1]);
 
-  double r_init = radius_for_phi(params.N, 0.02, params.r_in, params.thickness,
+  double r_init = radius_for_phi(params.n, 0.02, params.r_in, params.thickness,
                                  params.height);
-  double r_target = radius_for_phi(params.N, params.phi_target, params.r_in,
+  double r_target = radius_for_phi(params.n, params.phi_target, params.r_in,
                                    params.thickness, params.height);
   double r_particle = r_init;
 
@@ -437,11 +437,11 @@ int main(int argc, char *argv[]) {
   std::mt19937 gen(42);
   std::uniform_real_distribution<double> u01(0.0, 1.0);
 
-  std::vector<Particle> parts(params.N);
+  std::vector<Particle> parts(params.n);
   double r_out = params.r_in + params.thickness;
 
   // random init
-  for (int i = 0; i < params.N; i++) {
+  for (int i = 0; i < params.n; i++) {
     double u = u01(gen);
     double radial = std::sqrt(u * (r_out * r_out - params.r_in * params.r_in) +
                               params.r_in * params.r_in);
@@ -477,7 +477,7 @@ int main(int argc, char *argv[]) {
     double maxF = 0.0;
     double energy = compute_forces(params, parts, r_particle, grid, maxF);
     std::cout << "[cycle " << cycle << "] phi = "
-              << (params.N * (4.0 / 3.0) * M_PI * r_particle * r_particle *
+              << (params.n * (4.0 / 3.0) * M_PI * r_particle * r_particle *
                   r_particle) /
                      cylinder_shell_volume(params.r_in, params.thickness,
                                            params.height)

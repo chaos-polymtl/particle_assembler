@@ -1,3 +1,0 @@
-/home/runner/work/particle_assembler/particle_assembler/build/CMakeFiles/particle_assembler.dir
-/home/runner/work/particle_assembler/particle_assembler/build/CMakeFiles/edit_cache.dir
-/home/runner/work/particle_assembler/particle_assembler/build/CMakeFiles/rebuild_cache.dir

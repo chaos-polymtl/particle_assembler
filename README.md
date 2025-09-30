@@ -202,7 +202,7 @@ Convert the output to VTP format for visualization in ParaView:
 
 ```bash
 cd python
-python convert_output_to_vtp.py ../build/output.txt
+python convert_output.py ../build/output.txt
 ```
 
 The script supports the following options:
@@ -212,7 +212,7 @@ The script supports the following options:
 
 Example with custom output names:
 ```bash
-python convert_output_to_vtp.py output.txt --output-vtp my_particles.vtp --output-lethe my_insertion.dat
+python convert_output.py output.txt --output-vtp my_particles.vtp --output-lethe my_insertion.dat
 ```
 
 This will generate:

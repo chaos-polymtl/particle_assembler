@@ -148,7 +148,7 @@ cd build
 cmake ..
 make
 
-# The executable will be created as ParticleAssembler
+# The executable will be created as particle_assembler
 ```
 
 ## Usage
@@ -159,7 +159,7 @@ The particle assembler generates a packed particle assembly in a cylindrical she
 
 ```bash
 # Run the assembler
-./ParticleAssembler
+./particle_assembler
 ```
 
 This will:
@@ -167,6 +167,8 @@ This will:
 2. Gradually grow particle radii from an initial low packing fraction to the target packing fraction
 3. Use FIRE algorithm to relax overlaps at each growth step
 4. Output the final particle configuration to `output.txt`
+
+NOTE: The particle_assembler currently does not have an API to parametrize it from input file. This will be added in the near future.
 
 ### Configuration
 

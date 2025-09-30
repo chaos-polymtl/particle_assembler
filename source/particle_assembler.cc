@@ -248,7 +248,7 @@ double compute_forces(const SimulationParameters &params,
     double r = std::sqrt(p.x * p.x + p.y * p.y);
 
     // inner wall (if inside forbidden core)
-    double overlap_inner = params.r_in - r;
+    double overlap_inner = (params.r_in + 1 * r_particle) - r;
     if (overlap_inner > 0) {
       double fmag = params.k_wall * overlap_inner;
       double invr = (r > 1e-12) ? 1.0 / r : 0.0;
@@ -258,7 +258,7 @@ double compute_forces(const SimulationParameters &params,
     }
     // outer wall (if outside). Additional buffer is given here to account for
     // mesh inaccuracy.
-    double overlap_outer = r - (r_out - 0.5 * r_particle);
+    double overlap_outer = r - (r_out - 1.5 * r_particle);
     if (overlap_outer > 0) {
       double fmag = params.k_wall * overlap_outer;
       double invr = (r > 1e-12) ? 1.0 / r : 0.0;
@@ -267,14 +267,16 @@ double compute_forces(const SimulationParameters &params,
       energy += 0.5 * params.k_wall * overlap_outer * overlap_outer;
     }
     // z caps
-    if (p.z < 0) {
-      double o = -p.z;
+    double overlap_bottom = p.z - r_particle;
+    if (overlap_bottom < 0) {
+      double o = -overlap_bottom;
       p.fz += params.k_wall * o;
       energy += 0.5 * params.k_wall * o * o;
     }
-    if (p.z > params.height) {
-      double o = p.z - params.height;
-      p.fz -= params.k_wall * o;
+    const double overlap_top = (params.height - r_particle) - p.z;
+    if (overlap_top < 0) {
+      double o = overlap_top;
+      p.fz += params.k_wall * o;
       energy += 0.5 * params.k_wall * o * o;
     }
 

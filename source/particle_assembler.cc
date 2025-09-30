@@ -11,7 +11,7 @@
 using json = nlohmann::json;
 
 struct SimulationParameters {
-  int N;
+  int n_particles;
   double phi_target;
   double r_in;
   double thickness;
@@ -24,14 +24,14 @@ struct SimulationParameters {
   double fire_dt;
 
   // FIRE parameters
-  double FIRE_DT_INIT;
-  double FIRE_DT_MAX;
-  double FIRE_ALPHA_INIT;
-  double FIRE_FINC;
-  double FIRE_FDEC;
-  double FIRE_ALPHA_DEC;
-  int FIRE_NMIN;
-  double FIRE_FTOL;
+  double FIRE_dt_init;
+  double FIRE_dt_max;
+  double FIRE_alpha_init;
+  double FIRE_finc;
+  double FIRE_fdec;
+  double FIRE_alpha_dec;
+  int FIRE_nmin;
+  double FIRE_ftol;
 };
 
 SimulationParameters load_parameters(const std::string &filename) {
@@ -46,7 +46,7 @@ SimulationParameters load_parameters(const std::string &filename) {
   SimulationParameters p;
 
   try {
-    p.N = config.at("N").get<int>();
+    p.n_particles = config.at("n_particles").get<int>();
     p.phi_target = config.at("phi_target").get<double>();
     p.r_in = config.at("r_in").get<double>();
     p.thickness = config.at("thickness").get<double>();
@@ -64,14 +64,14 @@ SimulationParameters load_parameters(const std::string &filename) {
   p.fire_max_steps = config.value("fire_max_steps", 100000);
   p.fire_dt = config.value("fire_dt", 1e-5);
 
-  p.FIRE_DT_INIT = config.value("FIRE_DT_INIT", p.fire_dt);
-  p.FIRE_DT_MAX = config.value("FIRE_DT_MAX", p.fire_dt * 100.0);
-  p.FIRE_ALPHA_INIT = config.value("FIRE_ALPHA_INIT", 0.1);
-  p.FIRE_FINC = config.value("FIRE_FINC", 1.1);
-  p.FIRE_FDEC = config.value("FIRE_FDEC", 0.5);
-  p.FIRE_ALPHA_DEC = config.value("FIRE_ALPHA_DEC", 0.99);
-  p.FIRE_NMIN = config.value("FIRE_NMIN", 5);
-  p.FIRE_FTOL = config.value("FIRE_FTOL", 1e-6);
+  p.FIRE_dt_init = config.value("FIRE_dt_init", p.fire_dt);
+  p.FIRE_dt_max = config.value("FIRE_dt_max", p.fire_dt * 100.0);
+  p.FIRE_alpha_init = config.value("FIRE_alpha_init", 0.1);
+  p.FIRE_finc = config.value("FIRE_finc", 1.1);
+  p.FIRE_fdec = config.value("FIRE_fdec", 0.5);
+  p.FIRE_alpha_dec = config.value("FIRE_alpha_dec", 0.99);
+  p.FIRE_nmin = config.value("FIRE_nmin", 5);
+  p.FIRE_ftol = config.value("FIRE_ftol", 1e-6);
 
   return p;
 }
@@ -294,10 +294,10 @@ bool fire_minimize(const SimulationParameters &params,
                    CellGrid &grid, bool verbose = true) {
   const int NN = (int)parts.size();
 
-  double dt = params.FIRE_DT_INIT;
-  double dt_max = std::max(dt * 10.0, params.FIRE_DT_MAX);
-  double alpha = params.FIRE_ALPHA_INIT;
-  double alpha_start = params.FIRE_ALPHA_INIT;
+  double dt = params.FIRE_dt_init;
+  double dt_max = std::max(dt * 10.0, params.FIRE_dt_max);
+  double alpha = params.FIRE_alpha_init;
+  double alpha_start = params.FIRE_alpha_init;
   int n_positive = 0;
 
   // initial compute (fills forces)
@@ -334,13 +334,13 @@ bool fire_minimize(const SimulationParameters &params,
     // 3) adapt dt and alpha
     if (P > 0.0) {
       n_positive++;
-      if (n_positive > params.FIRE_NMIN) {
-        dt = std::min(dt * params.FIRE_FINC, dt_max);
-        alpha *= params.FIRE_ALPHA_DEC;
+      if (n_positive > params.FIRE_nmin) {
+        dt = std::min(dt * params.FIRE_finc, dt_max);
+        alpha *= params.FIRE_alpha_dec;
       }
     } else {
       n_positive = 0;
-      dt *= params.FIRE_FDEC;
+      dt *= params.FIRE_fdec;
       alpha = alpha_start;
       // zero velocities on negative power
       for (int i = 0; i < NN; ++i) {
@@ -374,7 +374,7 @@ bool fire_minimize(const SimulationParameters &params,
                 << " maxF=" << maxF << " dt=" << dt << " alpha=" << alpha
                 << "\n";
     }
-    if (maxF < params.FIRE_FTOL) {
+    if (maxF < params.FIRE_ftol) {
       if (verbose) {
         std::cout << "    FIRE converged in " << step << " steps (maxF=" << maxF
                   << ")\n";
@@ -425,9 +425,9 @@ int main(int argc, char *argv[]) {
   // Parse JSON and put it into simulation parameters;
   SimulationParameters params = load_parameters(argv[1]);
 
-  double r_init = radius_for_phi(params.N, 0.02, params.r_in, params.thickness,
+  double r_init = radius_for_phi(params.n_particles, 0.02, params.r_in, params.thickness,
                                  params.height);
-  double r_target = radius_for_phi(params.N, params.phi_target, params.r_in,
+  double r_target = radius_for_phi(params.n_particles, params.phi_target, params.r_in,
                                    params.thickness, params.height);
   double r_particle = r_init;
 
@@ -437,11 +437,11 @@ int main(int argc, char *argv[]) {
   std::mt19937 gen(42);
   std::uniform_real_distribution<double> u01(0.0, 1.0);
 
-  std::vector<Particle> parts(params.N);
+  std::vector<Particle> parts(params.n_particles);
   double r_out = params.r_in + params.thickness;
 
   // random init
-  for (int i = 0; i < params.N; i++) {
+  for (int i = 0; i < params.n_particles; i++) {
     double u = u01(gen);
     double radial = std::sqrt(u * (r_out * r_out - params.r_in * params.r_in) +
                               params.r_in * params.r_in);
@@ -477,7 +477,7 @@ int main(int argc, char *argv[]) {
     double maxF = 0.0;
     double energy = compute_forces(params, parts, r_particle, grid, maxF);
     std::cout << "[cycle " << cycle << "] phi = "
-              << (params.N * (4.0 / 3.0) * M_PI * r_particle * r_particle *
+              << (params.n_particles * (4.0 / 3.0) * M_PI * r_particle * r_particle *
                   r_particle) /
                      cylinder_shell_volume(params.r_in, params.thickness,
                                            params.height)

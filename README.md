@@ -174,7 +174,7 @@ NOTE: The syntax of the particle assembler is currently unstable
 
 Key parameters are defined in json files (ex: `examples/tetlow_phi_10p.json`:
 
-- `N`: Number of particles (no default)
+- `n_particles`: Number of particles (no default)
 - `phi_target`: Target packing fraction (no default)
 - `r_in`: Inner radius of cylindrical shell (no default)
 - `thickness`: Shell thickness, distance between outer and inner radius (no default)
@@ -184,7 +184,7 @@ Key parameters are defined in json files (ex: `examples/tetlow_phi_10p.json`:
 - `grow_rate`: Particle radius growth rate per cycle (default: 1.02)
 - `fire_max_steps`: Maximum FIRE iterations per cycle (default: 100000)
 - `fire_dt`: FIRE timestep (default: 1e-5)
-- `FIRE_FTOL`: Force convergence tolerance (default: 1e-6)
+- `FIRE_ftol`: Force convergence tolerance (default: 1e-6)
 
 ### Output Format
 

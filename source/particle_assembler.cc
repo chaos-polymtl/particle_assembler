@@ -45,11 +45,18 @@ SimulationParameters load_parameters(const std::string &filename) {
 
   SimulationParameters p;
 
-  p.N = config.value("N", 1000);
-  p.phi_target = config.value("phi_target", 0.10);
-  p.r_in = config.value("r_in", 0.0064);
-  p.thickness = config.value("thickness", 0.0238 - p.r_in);
-  p.height = config.value("height", 0.25);
+  try {
+    p.N = config.at("N").get<int>();
+    p.phi_target = config.at("phi_target").get<double>();
+    p.r_in = config.at("r_in").get<double>();
+    p.thickness = config.at("thickness").get<double>();
+    p.height = config.at("height").get<double>();
+  } catch (json::out_of_range &e) {
+    throw std::runtime_error(std::string("Missing required parameter: ") +
+                             e.what());
+  } catch (json::type_error &e) {
+    throw std::runtime_error(std::string("Wrong type in config: ") + e.what());
+  }
 
   p.k_pair = config.value("k_pair", 1e3);
   p.k_wall = config.value("k_wall", 1e3);

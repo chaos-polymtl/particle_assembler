@@ -159,7 +159,7 @@ The particle assembler generates a packed particle assembly in a cylindrical she
 
 ```bash
 # Run the assembler
-./particle_assembler
+./particle_assembler examples/tetlow_phi_10p.json
 ```
 
 This will:
@@ -168,17 +168,17 @@ This will:
 3. Use FIRE algorithm to relax overlaps at each growth step
 4. Output the final particle configuration to `output.txt`
 
-NOTE: The particle_assembler currently does not have an API to parametrize it from input file. This will be added in the near future.
+NOTE: The syntax of the particle assembler is currently unstable
 
 ### Configuration
 
-Key parameters are defined in `source/particle_assembler.cc`:
+Key parameters are defined in json files (ex: `examples/tetlow_phi_10p.json`:
 
-- `N`: Number of particles (default: 70486)
-- `phi_target`: Target packing fraction (default: 0.30)
-- `r_in`: Inner radius of cylindrical shell (default: 0.0064 m)
-- `thickness`: Shell thickness (default: 0.0238 - r_in m)
-- `height`: Cylinder height (default: 0.25 m)
+- `N`: Number of particles (no default)
+- `phi_target`: Target packing fraction (no default)
+- `r_in`: Inner radius of cylindrical shell (no default)
+- `thickness`: Shell thickness, distance between outer and inner radius (no default)
+- `height`: Cylinder height (no default)
 - `k_pair`: Particle-particle interaction stiffness (default: 1e3)
 - `k_wall`: Particle-wall interaction stiffness (default: 1e3)
 - `grow_rate`: Particle radius growth rate per cycle (default: 1.02)

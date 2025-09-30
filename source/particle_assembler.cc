@@ -256,8 +256,9 @@ double compute_forces(const SimulationParameters &params,
       p.fy += fmag * (p.y * invr);
       energy += 0.5 * params.k_wall * overlap_inner * overlap_inner;
     }
-    // outer wall (if outside)
-    double overlap_outer = r - r_out;
+    // outer wall (if outside). Additional buffer is given here to account for
+    // mesh inaccuracy.
+    double overlap_outer = r - (r_out - 0.5 * r_particle);
     if (overlap_outer > 0) {
       double fmag = params.k_wall * overlap_outer;
       double invr = (r > 1e-12) ? 1.0 / r : 0.0;
@@ -425,10 +426,11 @@ int main(int argc, char *argv[]) {
   // Parse JSON and put it into simulation parameters;
   SimulationParameters params = load_parameters(argv[1]);
 
-  double r_init = radius_for_phi(params.n_particles, 0.02, params.r_in, params.thickness,
-                                 params.height);
-  double r_target = radius_for_phi(params.n_particles, params.phi_target, params.r_in,
-                                   params.thickness, params.height);
+  double r_init = radius_for_phi(params.n_particles, 0.02, params.r_in,
+                                 params.thickness, params.height);
+  double r_target =
+      radius_for_phi(params.n_particles, params.phi_target, params.r_in,
+                     params.thickness, params.height);
   double r_particle = r_init;
 
   std::cout << "Initial radius = " << r_init << " target radius = " << r_target
@@ -477,8 +479,8 @@ int main(int argc, char *argv[]) {
     double maxF = 0.0;
     double energy = compute_forces(params, parts, r_particle, grid, maxF);
     std::cout << "[cycle " << cycle << "] phi = "
-              << (params.n_particles * (4.0 / 3.0) * M_PI * r_particle * r_particle *
-                  r_particle) /
+              << (params.n_particles * (4.0 / 3.0) * M_PI * r_particle *
+                  r_particle * r_particle) /
                      cylinder_shell_volume(params.r_in, params.thickness,
                                            params.height)
               << ", energy = " << energy << ", maxF = " << maxF << "\n";

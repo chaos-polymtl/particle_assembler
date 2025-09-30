@@ -1,5 +1,5 @@
 {
-  "n": 23495,
+  "n_particles": 23495,
   "phi_target": 0.10,
   "r_in": 0.0064,
   "thickness": 0.0174,
@@ -10,12 +10,12 @@
   "fire_max_steps": 100000,
   "fire_dt": 1e-5,
 
-  "FIRE_DT_INIT": 1e-5,
-  "FIRE_DT_MAX": 0.002,
-  "FIRE_ALPHA_INIT": 0.1,
-  "FIRE_FINC": 1.1,
-  "FIRE_FDEC": 0.5,
-  "FIRE_ALPHA_DEC": 0.99,
-  "FIRE_NMIN": 5,
-  "FIRE_FTOL": 1e-6
+  "FIRE_dt_init": 1e-5,
+  "FIRE_dt_max": 0.002,
+  "FIRE_alpha_init": 0.1,
+  "FIRE_finc": 1.1,
+  "FIRE_fdec": 0.5,
+  "FIRE_alpha_dec": 0.99,
+  "FIRE_nmin": 5,
+  "FIRE_ftol": 1e-6
 }

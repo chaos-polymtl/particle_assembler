@@ -7,5 +7,9 @@ project(particle_assembler LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+
 # Add the executable (replace "main.cpp" with your actual filename)
 add_executable(${PROJECT_NAME} source/particle_assembler.cc)
+
+target_include_directories(particle_assembler PRIVATE
+    ${CMAKE_SOURCE_DIR}/include)

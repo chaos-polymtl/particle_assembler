@@ -6,30 +6,68 @@
 #include <random>
 #include <vector>
 
-// ----------------------------
-// Parameters
-// ----------------------------
-const int N = 70486; // number of particles
-const double phi_target = 0.30;
-const double r_in = 0.0064;
-const double thickness = 0.0238 - r_in;
-const double height = 0.25;
+#include <nlohmann/json.hpp>
 
-const double k_pair = 1e3;
-const double k_wall = 1e3;
-const double grow_rate = 1.02;
-const int fire_max_steps = 100000;
-const double fire_dt = 1e-5;
+using json = nlohmann::json;
 
-// FIRE parameters (tunable)
-const double FIRE_DT_INIT = fire_dt;
-const double FIRE_DT_MAX = fire_dt * 200.0;
-const double FIRE_ALPHA_INIT = 0.1;
-const double FIRE_FINC = 1.1;
-const double FIRE_FDEC = 0.5;
-const double FIRE_ALPHA_DEC = 0.99;
-const int FIRE_NMIN = 5;
-const double FIRE_FTOL = 1e-6; // convergence on max force
+struct SimulationParameters {
+  int N;
+  double phi_target;
+  double r_in;
+  double thickness;
+  double height;
+
+  double k_pair;
+  double k_wall;
+  double grow_rate;
+  int fire_max_steps;
+  double fire_dt;
+
+  // FIRE parameters
+  double FIRE_DT_INIT;
+  double FIRE_DT_MAX;
+  double FIRE_ALPHA_INIT;
+  double FIRE_FINC;
+  double FIRE_FDEC;
+  double FIRE_ALPHA_DEC;
+  int FIRE_NMIN;
+  double FIRE_FTOL;
+};
+
+SimulationParameters load_parameters(const std::string &filename) {
+  std::ifstream f(filename);
+  if (!f) {
+    throw std::runtime_error("Could not open config file " + filename);
+  }
+
+  json config;
+  f >> config;
+
+  SimulationParameters p;
+
+  p.N = config.value("N", 1000);
+  p.phi_target = config.value("phi_target", 0.10);
+  p.r_in = config.value("r_in", 0.0064);
+  p.thickness = config.value("thickness", 0.0238 - p.r_in);
+  p.height = config.value("height", 0.25);
+
+  p.k_pair = config.value("k_pair", 1e3);
+  p.k_wall = config.value("k_wall", 1e3);
+  p.grow_rate = config.value("grow_rate", 1.02);
+  p.fire_max_steps = config.value("fire_max_steps", 100000);
+  p.fire_dt = config.value("fire_dt", 1e-5);
+
+  p.FIRE_DT_INIT = config.value("FIRE_DT_INIT", p.fire_dt);
+  p.FIRE_DT_MAX = config.value("FIRE_DT_MAX", p.fire_dt * 100.0);
+  p.FIRE_ALPHA_INIT = config.value("FIRE_ALPHA_INIT", 0.1);
+  p.FIRE_FINC = config.value("FIRE_FINC", 1.1);
+  p.FIRE_FDEC = config.value("FIRE_FDEC", 0.5);
+  p.FIRE_ALPHA_DEC = config.value("FIRE_ALPHA_DEC", 0.99);
+  p.FIRE_NMIN = config.value("FIRE_NMIN", 5);
+  p.FIRE_FTOL = config.value("FIRE_FTOL", 1e-6);
+
+  return p;
+}
 
 // ----------------------------
 // Particle structure
@@ -113,8 +151,8 @@ struct CellGrid {
 // ----------------------------
 // Computes pair forces (harmonic) and wall forces. Returns potential energy.
 // Also computes and returns max_force via reference.
-double compute_forces(std::vector<Particle> &parts, double r_particle,
-                      double r_in, double thickness, double height,
+double compute_forces(const SimulationParameters &params,
+                      std::vector<Particle> &parts, double r_particle,
                       CellGrid &grid, double &out_max_force) {
   int NN = (int)parts.size();
   for (auto &p : parts) {
@@ -126,7 +164,7 @@ double compute_forces(std::vector<Particle> &parts, double r_particle,
     grid.insert(i, parts[i]);
 
   double energy = 0.0;
-  double r_out = r_in + thickness;
+  double r_out = params.r_in + params.thickness;
   double cutoff = 2.0 * r_particle * 1.1; // small skin
 
   // neighbor loops
@@ -174,7 +212,7 @@ double compute_forces(std::vector<Particle> &parts, double r_particle,
                     }
                     double overlap = 2.0 * r_particle - d;
                     if (overlap > 0) {
-                      double fmag = k_pair * overlap;
+                      double fmag = params.k_pair * overlap;
                       double fx = fmag * dx / d;
                       double fy = fmag * dy / d;
                       double fz = fmag * dz / d;
@@ -184,7 +222,7 @@ double compute_forces(std::vector<Particle> &parts, double r_particle,
                       parts[b].fx -= fx;
                       parts[b].fy -= fy;
                       parts[b].fz -= fz;
-                      energy += 0.5 * k_pair * overlap * overlap;
+                      energy += 0.5 * params.k_pair * overlap * overlap;
                     }
                   }
                 }
@@ -203,33 +241,33 @@ double compute_forces(std::vector<Particle> &parts, double r_particle,
     double r = std::sqrt(p.x * p.x + p.y * p.y);
 
     // inner wall (if inside forbidden core)
-    double overlap_inner = r_in - r;
+    double overlap_inner = params.r_in - r;
     if (overlap_inner > 0) {
-      double fmag = k_wall * overlap_inner;
+      double fmag = params.k_wall * overlap_inner;
       double invr = (r > 1e-12) ? 1.0 / r : 0.0;
       p.fx += fmag * (p.x * invr);
       p.fy += fmag * (p.y * invr);
-      energy += 0.5 * k_wall * overlap_inner * overlap_inner;
+      energy += 0.5 * params.k_wall * overlap_inner * overlap_inner;
     }
     // outer wall (if outside)
     double overlap_outer = r - r_out;
     if (overlap_outer > 0) {
-      double fmag = k_wall * overlap_outer;
+      double fmag = params.k_wall * overlap_outer;
       double invr = (r > 1e-12) ? 1.0 / r : 0.0;
       p.fx -= fmag * (p.x * invr);
       p.fy -= fmag * (p.y * invr);
-      energy += 0.5 * k_wall * overlap_outer * overlap_outer;
+      energy += 0.5 * params.k_wall * overlap_outer * overlap_outer;
     }
     // z caps
     if (p.z < 0) {
       double o = -p.z;
-      p.fz += k_wall * o;
-      energy += 0.5 * k_wall * o * o;
+      p.fz += params.k_wall * o;
+      energy += 0.5 * params.k_wall * o * o;
     }
-    if (p.z > height) {
-      double o = p.z - height;
-      p.fz -= k_wall * o;
-      energy += 0.5 * k_wall * o * o;
+    if (p.z > params.height) {
+      double o = p.z - params.height;
+      p.fz -= params.k_wall * o;
+      energy += 0.5 * params.k_wall * o * o;
     }
 
     double fmag = std::sqrt(p.fx * p.fx + p.fy * p.fy + p.fz * p.fz);
@@ -244,28 +282,26 @@ double compute_forces(std::vector<Particle> &parts, double r_particle,
 // ----------------------------
 // FIRE minimizer
 // ----------------------------
-bool fire_minimize(std::vector<Particle> &parts, double r_particle, double r_in,
-                   double thickness, double height, CellGrid &grid,
-                   int max_steps, double dt_init, double ftol,
-                   bool verbose = true) {
+bool fire_minimize(const SimulationParameters &params,
+                   std::vector<Particle> &parts, double r_particle,
+                   CellGrid &grid, bool verbose = true) {
   const int NN = (int)parts.size();
 
-  double dt = dt_init;
-  double dt_max = std::max(dt * 10.0, FIRE_DT_MAX);
-  double alpha = FIRE_ALPHA_INIT;
-  double alpha_start = FIRE_ALPHA_INIT;
+  double dt = params.FIRE_DT_INIT;
+  double dt_max = std::max(dt * 10.0, params.FIRE_DT_MAX);
+  double alpha = params.FIRE_ALPHA_INIT;
+  double alpha_start = params.FIRE_ALPHA_INIT;
   int n_positive = 0;
 
   // initial compute (fills forces)
   double maxF = 0.0;
-  double energy =
-      compute_forces(parts, r_particle, r_in, thickness, height, grid, maxF);
+  double energy = compute_forces(params, parts, r_particle, grid, maxF);
 
   if (verbose) {
     std::cout << "  FIRE init: energy=" << energy << " maxF=" << maxF << "\n";
   }
 
-  for (int step = 0; step < max_steps; ++step) {
+  for (int step = 0; step < params.fire_max_steps; ++step) {
     // 1) velocity update: v += dt * f  (mass = 1)
     for (int i = 0; i < NN; ++i) {
       parts[i].vx += parts[i].fx * dt;
@@ -291,13 +327,13 @@ bool fire_minimize(std::vector<Particle> &parts, double r_particle, double r_in,
     // 3) adapt dt and alpha
     if (P > 0.0) {
       n_positive++;
-      if (n_positive > FIRE_NMIN) {
-        dt = std::min(dt * FIRE_FINC, dt_max);
-        alpha *= FIRE_ALPHA_DEC;
+      if (n_positive > params.FIRE_NMIN) {
+        dt = std::min(dt * params.FIRE_FINC, dt_max);
+        alpha *= params.FIRE_ALPHA_DEC;
       }
     } else {
       n_positive = 0;
-      dt *= FIRE_FDEC;
+      dt *= params.FIRE_FDEC;
       alpha = alpha_start;
       // zero velocities on negative power
       for (int i = 0; i < NN; ++i) {
@@ -323,8 +359,7 @@ bool fire_minimize(std::vector<Particle> &parts, double r_particle, double r_in,
     }
 
     // 6) recompute forces at new positions
-    energy =
-        compute_forces(parts, r_particle, r_in, thickness, height, grid, maxF);
+    energy = compute_forces(params, parts, r_particle, grid, maxF);
 
     // 7) convergence check
     if ((step % 100) == 0 && verbose) {
@@ -332,7 +367,7 @@ bool fire_minimize(std::vector<Particle> &parts, double r_particle, double r_in,
                 << " maxF=" << maxF << " dt=" << dt << " alpha=" << alpha
                 << "\n";
     }
-    if (maxF < ftol) {
+    if (maxF < params.FIRE_FTOL) {
       if (verbose) {
         std::cout << "    FIRE converged in " << step << " steps (maxF=" << maxF
                   << ")\n";
@@ -343,7 +378,7 @@ bool fire_minimize(std::vector<Particle> &parts, double r_particle, double r_in,
 
   // not converged
   if (verbose) {
-    std::cout << "    FIRE did NOT converge after " << max_steps
+    std::cout << "    FIRE did NOT converge after " << params.fire_max_steps
               << " steps (final maxF unknown)\n";
   }
   return false;
@@ -373,9 +408,20 @@ int write_output_file(const std::vector<Particle> &parts, const double radius,
 // ----------------------------
 // Main
 // ----------------------------
-int main() {
-  double r_init = radius_for_phi(N, 0.02, r_in, thickness, height);
-  double r_target = radius_for_phi(N, phi_target, r_in, thickness, height);
+
+int main(int argc, char *argv[]) {
+  if (argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " config.json\n";
+    return 1;
+  }
+
+  // Parse JSON and put it into simulation parameters;
+  SimulationParameters params = load_parameters(argv[1]);
+
+  double r_init = radius_for_phi(params.N, 0.02, params.r_in, params.thickness,
+                                 params.height);
+  double r_target = radius_for_phi(params.N, params.phi_target, params.r_in,
+                                   params.thickness, params.height);
   double r_particle = r_init;
 
   std::cout << "Initial radius = " << r_init << " target radius = " << r_target
@@ -384,15 +430,16 @@ int main() {
   std::mt19937 gen(42);
   std::uniform_real_distribution<double> u01(0.0, 1.0);
 
-  std::vector<Particle> parts(N);
-  double r_out = r_in + thickness;
+  std::vector<Particle> parts(params.N);
+  double r_out = params.r_in + params.thickness;
 
   // random init
-  for (int i = 0; i < N; i++) {
+  for (int i = 0; i < params.N; i++) {
     double u = u01(gen);
-    double radial = std::sqrt(u * (r_out * r_out - r_in * r_in) + r_in * r_in);
+    double radial = std::sqrt(u * (r_out * r_out - params.r_in * params.r_in) +
+                              params.r_in * params.r_in);
     double theta = u01(gen) * 2 * M_PI;
-    double z = u01(gen) * height;
+    double z = u01(gen) * params.height;
     parts[i].x = radial * std::cos(theta);
     parts[i].y = radial * std::sin(theta);
     parts[i].z = z;
@@ -405,29 +452,28 @@ int main() {
   int cycle = 0;
   while (r_particle < r_target) {
     cycle++;
-    r_particle = std::min(r_particle * grow_rate, r_target);
+    r_particle = std::min(r_particle * params.grow_rate, r_target);
 
     // rebuild grid using current cutoff based on the (grown) particle size
     double cutoff = 2.0 * r_particle * 1.1;
     CellGrid grid;
-    grid.init(r_out, height, cutoff);
+    grid.init(r_out, params.height, cutoff);
 
     std::cout << "\n=== Growth cycle " << cycle << ": r -> " << r_particle
               << " (cutoff=" << cutoff << ") ===\n";
 
     // Run FIRE to relax overlaps at this radius
-    bool ok = fire_minimize(parts, r_particle, r_in, thickness, height, grid,
-                            fire_max_steps, FIRE_DT_INIT, FIRE_FTOL,
+    bool ok = fire_minimize(params, parts, r_particle, grid,
                             /*verbose=*/true);
 
     // report energy after relax (one last force eval to get energy)
     double maxF = 0.0;
-    double energy =
-        compute_forces(parts, r_particle, r_in, thickness, height, grid, maxF);
+    double energy = compute_forces(params, parts, r_particle, grid, maxF);
     std::cout << "[cycle " << cycle << "] phi = "
-              << (N * (4.0 / 3.0) * M_PI * r_particle * r_particle *
+              << (params.N * (4.0 / 3.0) * M_PI * r_particle * r_particle *
                   r_particle) /
-                     cylinder_shell_volume(r_in, thickness, height)
+                     cylinder_shell_volume(params.r_in, params.thickness,
+                                           params.height)
               << ", energy = " << energy << ", maxF = " << maxF << "\n";
 
     // if FIRE didn't converge, you can try smaller grow_rate or more steps

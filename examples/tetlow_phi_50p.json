@@ -1,0 +1,21 @@
+{
+  "N": 117477,
+  "phi_target": 0.50,
+  "r_in": 0.0064,
+  "thickness": 0.0174,
+  "height": 0.25,
+  "k_pair": 1000.0,
+  "k_wall": 1000.0,
+  "grow_rate": 1.02,
+  "fire_max_steps": 100000,
+  "fire_dt": 1e-5,
+
+  "FIRE_DT_INIT": 1e-5,
+  "FIRE_DT_MAX": 0.002,
+  "FIRE_ALPHA_INIT": 0.1,
+  "FIRE_FINC": 1.1,
+  "FIRE_FDEC": 0.5,
+  "FIRE_ALPHA_DEC": 0.99,
+  "FIRE_NMIN": 5,
+  "FIRE_FTOL": 1e-6
+}

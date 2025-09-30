@@ -4,14 +4,14 @@ import argparse
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(description='Convert particle assembler output to VTP format for ParaView visualization')
-parser.add_argument('input_file', type=str, help='Input file containing particle positions and radii (format: x y z radius)')
+parser.add_argument('-i','--input', type=str, help='Input file containing particle positions and radii (format: x y z radius)')
 parser.add_argument('--output-vtp', type=str, default='particles.vtp', help='Output VTP file name (default: particles.vtp)')
 parser.add_argument('--output-lethe', type=str, default='insertion_file.dat', help='Output Lethe insertion file name (default: insertion_file.dat)')
 
 args = parser.parse_args()
 
 # Load data
-data = np.loadtxt(args.input_file, skiprows=1)
+data = np.loadtxt(args.input, skiprows=1)
 positions = data[:, 0:3]
 radius = data[:, -1]
 

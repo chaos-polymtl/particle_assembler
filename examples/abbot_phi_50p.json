@@ -1,0 +1,21 @@
+{
+  "n_particles": 12313,
+  "phi_target": 0.50,
+  "r_in": 0.0064,
+  "thickness": 0.0174,
+  "height": 0.25,
+  "k_pair": 1000.0,
+  "k_wall": 1000.0,
+  "grow_rate": 1.02,
+  "fire_max_steps": 100000,
+  "fire_dt": 1e-5,
+
+  "FIRE_dt_init": 1e-5,
+  "FIRE_dt_max": 0.002,
+  "FIRE_alpha_init": 0.1,
+  "FIRE_finc": 1.1,
+  "FIRE_fdec": 0.5,
+  "FIRE_alpha_dec": 0.99,
+  "FIRE_nmin": 5,
+  "FIRE_ftol": 1e-9
+}
